@@ -104,6 +104,7 @@
             animation: btnPulse 1.5s infinite ease-in-out; transition: all 0.2s;
         }
         .btn-play:hover { transform: scale(1.05); background: #ffea00; }
+        .btn-play:disabled { background: #555; color: #aaa; cursor: not-allowed; animation: none; }
         .btn-play::after {
             content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
@@ -152,7 +153,6 @@
             <img src="online.png" alt="Logo" class="logo-img">
             <h1>SORTEO NAVIDEÑO</h1>
             <div class="price-subtitle">INSCRIBETE CON $2,00</div>
-            <h3>REGISTRO AL SORTEO SE HABILITARA EL 16 DE DICIEMBRE DEL 2025</h3>
         </header>
 
         <div id="appContent" class="form-area"></div>
@@ -171,18 +171,17 @@
         // VISTAS HTML
         // ==========================================
         
-        // Formulario que envía al correo
+        // Formulario que envía al correo (AJAX)
         const viewRegister = `
-            <form action="https://formsubmit.co/merchanbalcazaranderson@gmail.com" method="POST" enctype="multipart/form-data">
+            <form id="nebliForm">
                 
                 <input type="hidden" name="_captcha" value="false">
-                <input type="hidden" name="_subject" value="Nuevo Participante Sorteo Neblistore">
+                <input type="hidden" name="_subject" value="Nuevo Registro - Sorteo Neblistore">
                 <input type="hidden" name="_template" value="table">
-                <input type="hidden" name="_next" value="${window.location.href}">
 
                 <div class="input-box">
                     <label>ID FORTNITE</label>
-                    <input type="text" name="ID_Fortnite" placeholder="Escribe tu usuario..." required>
+                    <input type="text" name="ID_Fortnite" id="fortniteId" placeholder="Escribe tu usuario..." required>
                 </div>
 
                 <div class="input-box">
@@ -197,7 +196,7 @@
                             <i class="fas fa-building"></i> <span>Guayaquil</span>
                         </div>
                         <div class="bank-option" id="opt-bol" onclick="selectBank('bol')">
-                            <i class="fas fa-landmark"></i> <span>Bolivariano</span>
+                            <i class="fas fa-landmark"></i> <span>Bolivar.</span>
                         </div>
                     </div>
                 </div>
@@ -210,11 +209,26 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-play"><span>¡PARTICIPAR!</span></button>
+                <button type="submit" id="submitBtn" class="btn-play"><span>¡PARTICIPAR!</span></button>
+                <div id="loadingText" style="display:none; text-align:center; color:var(--fortnite-yellow); margin-top:10px; font-weight:bold;">
+                    <i class="fas fa-spinner fa-spin"></i> Enviando datos...
+                </div>
             </form>
             
             <p style="text-align:center; font-size:0.7rem; color:rgba(255,255,255,0.5); cursor:pointer; margin-top:10px" onclick="loadRaffle()">
+                [Admin: Ir al Sorteo]
             </p>
+        `;
+
+        // Vista de ÉXITO
+        const viewSuccess = `
+            <div style="text-align:center; padding: 20px;">
+                <i class="fas fa-check-circle" style="font-size: 4rem; color: #00ff00; margin-bottom: 20px; text-shadow: 0 0 20px #00ff00;"></i>
+                <h2 style="font-family:'Luckiest Guy'; color:var(--fortnite-yellow); margin-bottom:10px;">¡REGISTRO ENVIADO!</h2>
+                <p style="color:#ddd; margin-bottom:20px;">Tu participación y comprobante han sido recibidos correctamente.</p>
+                <p style="font-size:0.9rem; color:var(--neon-pink);">¡Mucha suerte en el sorteo!</p>
+                <button onclick="location.reload()" class="btn-play" style="margin-top:30px; font-size:1rem;">Volver</button>
+            </div>
         `;
 
         const viewRaffle = `
@@ -254,19 +268,70 @@
 
         // Iniciar
         app.innerHTML = viewRegister;
+        
+        // Agregar Listener al formulario después de cargarlo
+        setTimeout(() => {
+            const form = document.getElementById('nebliForm');
+            if(form) form.addEventListener('submit', handleFormSubmit);
+        }, 500);
+
+        // --- MANEJO DEL ENVÍO (AJAX) ---
+        function handleFormSubmit(e) {
+            e.preventDefault(); // Evita que la página se recargue o cambie
+
+            // Validar Banco
+            const bank = document.getElementById('selectedBankInput').value;
+            if(!bank) {
+                alert("Por favor selecciona un banco.");
+                return;
+            }
+
+            const form = e.target;
+            const btn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loadingText');
+
+            // Mostrar estado de carga
+            btn.style.display = 'none';
+            loading.style.display = 'block';
+
+            // Preparar datos para envío
+            const formData = new FormData(form);
+
+            // Enviar usando Fetch a FormSubmit
+            fetch("https://formsubmit.co/neblistoregames1@hotmail.com", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // SI TODO SALIÓ BIEN:
+                    app.innerHTML = viewSuccess; // Mostrar mensaje de éxito
+                } else {
+                    alert("Hubo un error al enviar. Intenta nuevamente.");
+                    btn.style.display = 'block';
+                    loading.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error de conexión. Revisa tu internet.");
+                btn.style.display = 'block';
+                loading.style.display = 'none';
+            });
+        }
 
         // --- FUNCIONES FORMULARIO ---
         function selectBank(bank) {
             let title, body, val;
             if(bank === 'pic') { 
                 title = "Banco Pichincha"; val="Pichincha";
-                body = "Tipo: Ahorro <br> Cuenta Nº: <span>2213391649</span> <br> Titular: Anderson Alexander Merchan";
+                body = "Tipo: Ahorros <br> Cuenta Nº: <span>2213391649</span> <br> Titular: Anderson Alexander Merchan";
             } else if(bank === 'gua') { 
                 title = "Banco Guayaquil"; val="Guayaquil";
-                body = "Tipo: Ahorro <br> Cuenta Nº: <span>0030967865</span> <br> Titular: Anderson Alexander Merchan";
+                body = "Tipo: Ahorros <br> Cuenta Nº: <span>0030967865</span> <br> Titular: Anderson Alexander Merchan";
             } else if(bank === 'bol') { 
                 title = "Banco Bolivariano"; val="Bolivariano";
-                body = "Tipo: Ahorro <br> Cuenta Nº: <span>0881330939</span> <br> Titular: Anderson Alexander Merchan";
+                body = "Tipo: Ahorros <br> Cuenta Nº: <span>0881330939</span> <br> Titular: Anderson Alexander Merchan";
             }
             
             // Llenar input oculto para el correo
@@ -359,13 +424,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
